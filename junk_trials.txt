@@ -1,0 +1,267 @@
+'''
+    def loss_context_exclusion(
+        self,
+        outputs,
+        targets,
+        indices,
+        num_boxes,
+        *,
+        step: int | None = None,
+        global_step: int | None = None,
+        **kwargs,
+        ):
+        """
+        VFL-style unsupervised exclusion:
+        - computed on ALL queries (matched + unmatched), like VFL
+        - uses sigmoid probs (consistent with VFL training)
+        - uses predicted boxes for proximity (optionally detached)
+        - reduction mimics VFL: sum over batch / num_boxes
+        For 2 classes (moose=0, deer=1):
+          closeness_ij = 1 / (1 + r_ij^2), r_ij = ||c_i-c_j|| / mean(scale_i,scale_j)
+          cross_ij     = p_m(i)p_d(j) + p_d(i)p_m(j)
+          loss_img     = sum_{i<j} closeness_ij * cross_ij * gate_ij
+          loss         = sum_b loss_img / num_boxes
+        """
+        ramp = self._context_ramp(step=step, global_step=global_step)
+        if ramp <= 0.0:
+            return {"loss_context_exclusion": torch.zeros((), device=outputs["pred_logits"].device)}
+        pred_logits = outputs["pred_logits"]  # [B,Q,C]
+        pred_boxes = outputs["pred_boxes"]    # [B,Q,4]
+        device = pred_logits.device
+        B, Q, C = pred_logits.shape
+        # This implementation assumes exactly two animal classes in fixed order.
+        # If that is not true, change these indices or make them configurable.
+        assert C >= 2, "context_exclusion expects at least 2 classes"
+        moose_cls = 0
+        deer_cls = 1
+        boxes = pred_boxes
+        if self.context_detach_boxes:
+            boxes = boxes.detach()
+        # VFL uses sigmoid (multi-label style). Keep consistent.
+        probs = torch.sigmoid(pred_logits)  # [B,Q,C]
+        p_m = probs[..., moose_cls]  # [B,Q]
+        p_d = probs[..., deer_cls]   # [B,Q]
+        eps = 1e-6
+        animal = (p_m + p_d).clamp(min=eps)              # [B,Q]
+        s_m = p_m / animal
+        s_d = p_d / animal
+
+        # COMBINED CROSS
+        # Mixing term encourages polarization
+        cross_mix = (s_m[:, :, None] * s_d[:, None, :] + s_d[:, :, None] * s_m[:, None, :])  # [B,Q,Q] in [0, 1]
+        cross_mix.diagonal(dim1=1, dim2=2).fill_(0.0)
+        # Disagreement term encourages similarity
+        #cross_dis = (s_m[:, :, None] - s_m[:, None, :]).abs()
+        cross_dis = (s_m[:, :, None] - s_m[:, None, :]).pow(2)
+        cross_dis.diagonal(dim1=1, dim2=2).fill_(0.0)
+
+        # NEW: do not dilute mixing; only amplify it when they disagree
+        a = 0.5
+        cross = a * cross_mix + (1 - a) * cross_dis
+        cross.diagonal(dim1=1, dim2=2).fill_(0.0)
+
+        # Objectness gate: suppress background queries naturally
+        # Make it VFL-like: compute the weighting from DETACHED probabilities so it doesn't create an incentive
+        # to reduce objectness to "game" the weight (mirrors pred_score = sigmoid(logits).detach() in VFL).
+        probs_det = probs.detach()
+        obj = torch.maximum(probs_det[..., moose_cls], probs_det[..., deer_cls])  # [B,Q]
+        gate = obj[:, :, None] * obj[:, None, :]  # [B,Q,Q]
+
+        centers = boxes[..., 0:2]  # [B,Q,2]
+        wh = boxes[..., 2:4].clamp(min=1e-6)
+        scale = torch.sqrt(wh[..., 0] * wh[..., 1]).clamp(min=1e-6)  # [B,Q]
+
+        # Pairwise normalized distance per image
+        # torch.cdist supports [B,Q,2] x [B,Q,2] -> [B,Q,Q]
+        dist = torch.cdist(centers, centers, p=2)
+        denom = 0.5 * (scale[:, :, None] + scale[:, None, :]) + 1e-6
+        norm_dist = dist / denom
+        norm_dist.diagonal(dim1=1, dim2=2).fill_(1e6)
+
+        closeness = 1.0 / (1.0 + norm_dist * norm_dist)  # [B,Q,Q] in (0,1]
+        pair_loss = closeness * cross * gate
+        pair_loss.diagonal(dim1=1, dim2=2).fill_(0.0)
+
+        # Unordered pairs only
+        per_img = pair_loss.triu(diagonal=1).sum(dim=(1, 2))  # [B]
+
+        pair_excl_loss = per_img.sum() / float(num_boxes)
+        # NEW: within-query ambiguity penalty (conditional; independent of overall magnitude)
+        # s_m, s_d already computed above
+        # amb = (2.0 * torch.minimum(s_m, s_d)).pow(2)  # [B,Q] in [0,1]
+        amb = (p_m * p_d)  # [B,Q]
+        amb_w = torch.maximum(p_m, p_d).detach()  # [B,Q] (VFL-like detached weighting)
+        amb_loss = (amb_w * amb).sum() / float(num_boxes)
+        lambda_amb = 0.1  # safe start for your setting (dupes explode when ctx_weight > ~2)
+        loss = pair_excl_loss + lambda_amb * amb_loss
+        return {"loss_context_exclusion": loss * float(ramp)}
+    '''
+
+    '''
+        def loss_context_exclusion(
+            self,
+            outputs,
+            targets,
+            indices,
+            num_boxes,
+            *,
+            step: int | None = None,
+            global_step: int | None = None,
+            **kwargs,
+        ):
+        """
+        Simple unsupervised exclusion (2-class friendly):
+        Penalize close moose–deer pairs using bounded inverse-distance weight.
+        - matched predictions only
+        - uses predicted boxes (optionally detached)
+        - no GT comparison
+        - no exp/sigma
+        - pair_loss computed over all unordered pairs summed for that image (not averaged over pairs)
+        """
+        ramp = self._context_ramp(step=step, global_step=global_step)
+        if ramp <= 0.0:
+            return {"loss_context_exclusion": torch.zeros((), device=outputs["pred_logits"].device)}
+
+        idx = self._get_src_permutation_idx(indices)
+        src_logits = outputs["pred_logits"][idx] #[M,C]
+        src_boxes = outputs["pred_boxes"][idx] #[M,4]
+        src_boxes = src_boxes.detach()
+
+        sizes = [int(s.numel()) for (s, _) in indices]
+        logits_split = torch.split(src_logits, sizes, dim=0)
+        boxes_split = torch.split(src_boxes, sizes, dim=0)
+
+        moose_cls, deer_cls = 0, 1
+        eps = 1e-6
+        total = torch.zeros((), device=src_logits.device, dtype=src_logits.dtype)
+
+        for logits, boxes in zip(logits_split, boxes_split):
+            n = boxes.shape[0]
+            if n < 2:
+                continue
+
+            probs = F.softmax(logits, dim=-1)
+            p_m = probs[:, moose_cls]
+            p_d = probs[:, deer_cls]
+            animal = (p_m + p_d).clamp(min=eps)
+            s_m = p_m / animal
+            s_d = p_d / animal
+
+            cross_mix = s_m[:, None] * s_d[None, :] + s_d[:, None] * s_m[None, :]
+            cross_dis = (s_m[:, None] - s_m[None, :]).pow(2)
+            cross = cross_mix + cross_dis
+            cross.fill_diagonal_(0.0)
+
+            centers = boxes[:, 0:2]
+            wh = boxes[:, 2:4].clamp(min=eps)
+            scale = torch.sqrt(wh[:, 0] * wh[:, 1]).clamp(min=eps)
+            dist = torch.cdist(centers, centers, p=2)
+            denom = 0.5 * (scale[:, None] + scale[None, :]) + eps
+            norm_dist = dist / denom
+            norm_dist.fill_diagonal_(1e6)
+            #closeness = 1.0 / (1.0 + norm_dist * norm_dist)
+            sigma = float(self.context_exclusion_sigma)
+            closeness = torch.exp(-0.5 * (norm_dist / (sigma + eps)).pow(2))
+
+            total = total + (closeness * cross).triu(diagonal=1).sum()
+
+        return {"loss_context_exclusion": (total / float(num_boxes)) * float(ramp)}
+    '''
+
+    '''
+        def loss_context_exclusion(
+            self,
+            outputs,
+            targets,
+            indices,
+            num_boxes,
+            *,
+            step: int | None = None,
+            global_step: int | None = None,
+            **kwargs,
+        ):
+            """
+            GT-pair-stat exclusion (MASKED types, matched-only, boxes detached):
+            Same as your current GT-pair-stat version, except:
+            - if a GT pair-type (mm / dd / md) has ZERO pairs in an image, its term is SKIPPED
+            (i.e., undefined target => no constraint, not forced to 0)
+            - reduction: sum over included GT pairs across batch (pair-count normalization)
+            """
+            ramp = self._context_ramp(step=step, global_step=global_step)
+            if ramp <= 0.0:
+                return {
+                    "loss_context_exclusion": torch.zeros(
+                        (), device=outputs["pred_logits"].device
+                    )
+                }
+            device = outputs["pred_logits"].device
+            eps = 1e-6
+            moose_cls, deer_cls = 0, 1
+            total = torch.zeros((), device=device, dtype=outputs["pred_logits"].dtype)
+            denom = 0.0  # total number of INCLUDED GT pairs across batch (masked reduction)
+            for b, (src_idx, tgt_idx) in enumerate(indices):
+                if src_idx.numel() < 2:
+                    continue
+                logits = outputs["pred_logits"][b, src_idx]  # [N,C]
+                pred_boxes = outputs["pred_boxes"][b, src_idx]  # [N,4]
+                if self.context_detach_boxes:
+                    pred_boxes = pred_boxes.detach()
+                gt_boxes = targets[b]["boxes"][tgt_idx].to(device=device, dtype=pred_boxes.dtype)  # [N,4]
+                gt_labels = targets[b]["labels"][tgt_idx].to(device=device)  # [N]
+                N = pred_boxes.shape[0]
+                iu = torch.triu_indices(N, N, offset=1, device=device)
+                i, j = iu[0], iu[1]
+                # ---- conditional probs on matched queries (2-class: moose/deer indices fixed) ----
+                probs = F.softmax(logits, dim=-1)  # [N,C]
+                p_m = probs[:, moose_cls]
+                p_d = probs[:, deer_cls]
+                animal = (p_m + p_d).clamp(min=eps)
+                s_m = p_m / animal
+                s_d = p_d / animal
+                # ---- closeness from (detached) predicted boxes ----
+                def _closeness(boxes: torch.Tensor) -> torch.Tensor:
+                    centers = boxes[:, 0:2]  # [N,2]
+                    wh = boxes[:, 2:4].clamp(min=eps)
+                    scale = torch.sqrt(wh[:, 0] * wh[:, 1]).clamp(min=eps)  # [N]
+                    dist = torch.cdist(centers, centers, p=2)  # [N,N]
+                    denom_ = 0.5 * (scale[:, None] + scale[None, :]) + eps
+                    norm_dist = dist / denom_
+                    norm_dist.fill_diagonal_(1e6)
+                    return 1.0 / (1.0 + norm_dist * norm_dist)  # [N,N] in (0,1]
+                c_pred = _closeness(pred_boxes)  # [N,N]
+                c_gt = _closeness(gt_boxes)      # [N,N]
+                c_pred_ij = c_pred[i, j]         # [P]
+                c_gt_ij = c_gt[i, j]             # [P]
+                # ---- predicted pair masses (soft) ----
+                w_mm = s_m[i] * s_m[j]
+                w_dd = s_d[i] * s_d[j]
+                w_md = s_m[i] * s_d[j] + s_d[i] * s_m[j]
+                M_pred_mm = (c_pred_ij * w_mm).sum()
+                M_pred_dd = (c_pred_ij * w_dd).sum()
+                M_pred_md = (c_pred_ij * w_md).sum()
+                # ---- GT pair masks/counts ----
+                yi = gt_labels[i]
+                yj = gt_labels[j]
+                mm_mask = (yi == moose_cls) & (yj == moose_cls)
+                dd_mask = (yi == deer_cls) & (yj == deer_cls)
+                md_mask = ~(mm_mask | dd_mask)
+                n_mm = int(mm_mask.sum().item())
+                n_dd = int(dd_mask.sum().item())
+                n_md = int(md_mask.sum().item())
+                # ---- GT pair masses (hard) ----
+                # (only computed/used if that type exists; otherwise skipped)
+                if n_mm > 0:
+                    M_gt_mm = c_gt_ij[mm_mask].sum()
+                    total = total + (M_pred_mm - M_gt_mm).abs()
+                    denom += float(n_mm)
+                if n_dd > 0:
+                    M_gt_dd = c_gt_ij[dd_mask].sum()
+                    total = total + (M_pred_dd - M_gt_dd).abs()
+                    denom += float(n_dd)
+                if n_md > 0:
+                    M_gt_md = c_gt_ij[md_mask].sum()
+                    total = total + (M_pred_md - M_gt_md).abs()
+                    denom += float(n_md)
+            loss = total / float(max(denom, 1.0))
+            return {"loss_context_exclusion": loss * float(ramp)}
+    '''
