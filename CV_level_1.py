@@ -5,8 +5,6 @@ import lightly_train
 import torch
 from pathlib import Path
 
-# ...existing code...
-
 TEST_FOLDS = [
     "Fold_1_Feb29_Mar11",
     "Fold_2_Mar01",
@@ -24,7 +22,7 @@ def slugify(s: str) -> str:
     return s.strip("_")
 
 def main():
-    import wandb  # ensure we can close runs between loop iterations
+    import wandb 
 
     for test_fold in TEST_FOLDS:
         heldout_root = CV_ROOT / test_fold / "CV" / "heldout_val"
@@ -33,11 +31,11 @@ def main():
         for split_path in cv_splits:
             # e.g. Fold_3_Mar05/CV/heldout_val/Fold1_val
             run_name = f"{test_fold}/CV/heldout_val/{split_path.name}"
-            out_dir = f"Heldout_CV/{slugify(run_name)}"
+            out_dir = f"experiments/LTDETR_level_1/{slugify(run_name)}"
 
             lightly_train.train_object_detection(
                 out=out_dir,
-                model="dinov3/convnext-small-ltdetr-coco",
+                model="dinov3/convnext-small-ltdetr",
                 overwrite=True,
                 batch_size=4,
                 steps=steps,
@@ -51,7 +49,7 @@ def main():
                 },
                 logger_args={
                     "wandb": {
-                        "project": "Heldout_CV_Rerun",
+                        "project": "LTDETR_level_1",
                         "name": run_name,
                         "log_model": False,
                     },
@@ -59,7 +57,7 @@ def main():
                 },
                 save_checkpoint_args={
                     "save_every_num_steps": 10000,
-                    "save_last": True,
+                    "save_last": False,
                     "save_best": True,
                 },
                 transform_args={
@@ -74,6 +72,7 @@ def main():
                     },
                 },
                 model_args={
+                    "backbone_args": {"pretrained": False, "weights": None},
                     "optimizer_lr": 5e-5, 
                     "scheduler_warmup_steps": steps // 10,
                     "ema_warmup_steps": steps // 10,

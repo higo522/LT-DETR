@@ -31,7 +31,7 @@ def main():
         for split_path in cv_splits:
             # e.g. Fold_3_Mar05/CV/heldout_val/Fold1_val
             run_name = f"{test_fold}/CV/heldout_val/{split_path.name}"
-            out_dir = f"Heldout_CV/{slugify(run_name)}"
+            out_dir = f"experiments/LTDETR_level_2/{slugify(run_name)}"
 
             lightly_train.train_object_detection(
                 out=out_dir,
@@ -49,7 +49,7 @@ def main():
                 },
                 logger_args={
                     "wandb": {
-                        "project": "LTDETR_nococo_rerun",
+                        "project": "LTDETR_level_2",
                         "name": run_name,
                         "log_model": False,
                     },
@@ -77,7 +77,6 @@ def main():
                     "ema_warmup_steps": steps // 10,
                 },
             )
-            # Critical: close the run so next loop iteration starts a new one.
             wandb.finish()
 
 if __name__ == "__main__":
