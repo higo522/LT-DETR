@@ -12,19 +12,19 @@ from supervision.metrics import MeanAveragePrecision
 MODELS = [
     {
         "name": "Model 1",
-        "checkpoint": "Heldout_CV_Exclusion/fold_5_mar10_cv_heldout_val_fold1_val/exported_models/exported_best.pt",
+        "checkpoint": "experiments/LTDETR_nococo_rerun/fold_5_mar10_cv_heldout_val_fold1_val/exported_models/exported_best.pt",
     },
     {
         "name": "Model 2",
-        "checkpoint": "Heldout_CV_Exclusion/fold_5_mar10_cv_heldout_val_fold2_val/exported_models/exported_best.pt",
+        "checkpoint": "experiments/LTDETR_nococo_rerun/fold_5_mar10_cv_heldout_val_fold2_val/exported_models/exported_best.pt",
     },
     {
         "name": "Model 3",
-        "checkpoint": "Heldout_CV_Exclusion/fold_5_mar10_cv_heldout_val_fold3_val/exported_models/exported_best.pt",
+        "checkpoint": "experiments/LTDETR_nococo_rerun/fold_5_mar10_cv_heldout_val_fold3_val/exported_models/exported_best.pt",
     },
     {
         "name": "Model 4",
-        "checkpoint": "Heldout_CV_Exclusion/fold_5_mar10_cv_heldout_val_fold4_val/exported_models/exported_best.pt",
+        "checkpoint": "experiments/LTDETR_nococo_rerun/fold_5_mar10_cv_heldout_val_fold4_val/exported_models/exported_best.pt",
     },
 ]
 
