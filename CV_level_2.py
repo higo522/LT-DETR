@@ -81,3 +81,9 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+'''
+It should say:
+DINOv3 weights not found locally. Downloading weights from https://lightly-train-checkpoints.s3.us-east-1.amazonaws.com/dinov3/dinov3_convnext_small_lvd1689m.pth to /home/higo522/.cache/lightly-train/models/dinov3_convnext_small_lvd1689m.pth
+100%|████████████████████████████████████████████████████████████| 192M/192M [00:08<00:00, 25.1MB/s]
+'''
