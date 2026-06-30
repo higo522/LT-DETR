@@ -7,13 +7,13 @@ import torch
 import lightly_train
 from tqdm import tqdm
 from supervision.metrics import MeanAveragePrecision
-CHECKPOINT_DIR = "experiments/LTDETR_level_1"
+CHECKPOINT_DIR = "experiments/LTDETR_level_2"
 data_yaml_path = "/home/higo522/moose_deer/5_Fold_CV/test_data.yaml"
 
 TEST_FOLDS = [
-    #{"name": "Test 1", "prefix": "fold_1_feb29_mar11", "data_dir": "Fold_1_Feb29_Mar11"},
-    #{"name": "Test 2", "prefix": "fold_2_mar01",       "data_dir": "Fold_2_Mar01"},
-    #{"name": "Test 3", "prefix": "fold_3_mar05",       "data_dir": "Fold_3_Mar05"},
+    {"name": "Test 1", "prefix": "fold_1_feb29_mar11", "data_dir": "Fold_1_Feb29_Mar11"},
+    {"name": "Test 2", "prefix": "fold_2_mar01",       "data_dir": "Fold_2_Mar01"},
+    {"name": "Test 3", "prefix": "fold_3_mar05",       "data_dir": "Fold_3_Mar05"},
     {"name": "Test 4", "prefix": "fold_4_mar09",       "data_dir": "Fold_4_Mar09"},
     {"name": "Test 5", "prefix": "fold_5_mar10",       "data_dir": "Fold_5_Mar10"},
 ]
@@ -25,9 +25,9 @@ for test_fold in TEST_FOLDS:
     annotations_directory_path = f"/home/higo522/moose_deer/5_Fold_CV/{test_fold['data_dir']}/labels/val"
     checkpoints = sorted([d for d in os.listdir(CHECKPOINT_DIR) if d.startswith(test_fold["prefix"])])
 
-    for model_idx, ckpt in enumerate(checkpoints, start=1):
+    for ckpt in checkpoints:
         checkpoint = f"{CHECKPOINT_DIR}/{ckpt}/exported_models/exported_best.pt"
-        model_name = f"Val {model_idx}"
+        model_name = ckpt[-9:]
 
         print("\n" + "=" * 80)
         print(f"{test_fold['name']} — {model_name}")
