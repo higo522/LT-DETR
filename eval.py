@@ -76,17 +76,15 @@ for test_fold in TEST_FOLDS:
         recall_d    = TP_D / (TP_D + FN_D + 1e-9)
         F1_d        = 2 * precision_d * recall_d / (precision_d + recall_d + 1e-9)
 
-        macro_f1 = (F1_m + F1_d) / 2
-
         map_result = MeanAveragePrecision().update(predictions, targets).compute()
 
         print(f"MOOSE: Precision = {precision_m:.4f}, Recall = {recall_m:.4f}, F1 = {F1_m:.4f}, mAP50 = {map_result.ap_per_class[0,0]:.3f}, mAP50-95 = {map_result.ap_per_class[0].mean():.3f}")
         print(f"DEER:  Precision = {precision_d:.4f}, Recall = {recall_d:.4f}, F1 = {F1_d:.4f}, mAP50 = {map_result.ap_per_class[1,0]:.3f}, mAP50-95 = {map_result.ap_per_class[1].mean():.3f}")
-        print(f"Avg:   Precision = {(precision_m + precision_d) / 2:.4f}, Recall = {(recall_m + recall_d) / 2:.4f}, F1 = {macro_f1:.4f}, mAP50 = {map_result.ap_per_class[:,0].mean():.3f}, mAP50-95 = {map_result.ap_per_class.mean():.3f}")
+        print(f"Avg:   Precision = {(precision_m + precision_d) / 2:.4f}, Recall = {(recall_m + recall_d) / 2:.4f}, F1 = {(F1_m + F1_d) / 2:.4f}, mAP50 = {map_result.ap_per_class[:,0].mean():.3f}, mAP50-95 = {map_result.ap_per_class.mean():.3f}")
 
         csv_rows.append([test_fold["name"], model_name, "M", f"{precision_m:.4f}", f"{recall_m:.4f}", f"{F1_m:.4f}", f"{map_result.ap_per_class[0,0]:.3f}", f"{map_result.ap_per_class[0].mean():.3f}"])
         csv_rows.append([test_fold["name"], model_name, "D", f"{precision_d:.4f}", f"{recall_d:.4f}", f"{F1_d:.4f}", f"{map_result.ap_per_class[1,0]:.3f}", f"{map_result.ap_per_class[1].mean():.3f}"])
-        csv_rows.append([test_fold["name"], model_name, "A", f"{(precision_m + precision_d) / 2:.4f}", f"{(recall_m + recall_d) / 2:.4f}", f"{macro_f1:.4f}", f"{map_result.ap_per_class[:,0].mean():.3f}", f"{map_result.ap_per_class.mean():.3f}"])
+        csv_rows.append([test_fold["name"], model_name, "A", f"{(precision_m + precision_d) / 2:.4f}", f"{(recall_m + recall_d) / 2:.4f}", f"{(F1_m + F1_d) / 2:.4f}", f"{map_result.ap_per_class[:,0].mean():.3f}", f"{map_result.ap_per_class.mean():.3f}"])
 
 csv_path = "results.csv"
 with open(csv_path, "w", newline="") as f:
