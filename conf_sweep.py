@@ -5,7 +5,7 @@ import supervision as sv
 import lightly_train
 from tqdm import tqdm
 
-CHECKPOINT_DIR = "experiments/LTDETR_level_1"
+CHECKPOINT_DIR = "experiments/Heldout_CV (level 3)"
 data_yaml_path = "/home/higo522/moose_deer/5_Fold_CV/test_data.yaml"
 
 CONF_THRESHOLDS = np.round(np.arange(0.05, 1.00, 0.05), 2).tolist()

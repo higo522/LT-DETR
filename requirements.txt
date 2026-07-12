@@ -58,6 +58,7 @@ omegaconf==2.3.0
 opencv-python==4.11.0.86
 opencv-python-headless==4.11.0.86
 packaging==25.0
+pandas==3.0.3
 pillow==12.1.0
 platformdirs==4.5.1
 propcache==0.4.1

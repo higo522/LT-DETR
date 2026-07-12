@@ -7,7 +7,7 @@ import torch
 import lightly_train
 from tqdm import tqdm
 from supervision.metrics import MeanAveragePrecision
-CHECKPOINT_DIR = "experiments/LTDETR_level_2"
+CHECKPOINT_DIR = "experiments/Heldout_CV (level 2)"
 data_yaml_path = "/home/higo522/moose_deer/5_Fold_CV/test_data.yaml"
 
 TEST_FOLDS = [

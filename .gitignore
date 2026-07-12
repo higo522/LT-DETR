@@ -12,3 +12,7 @@ experiments/
 wandb/
 runs/
 results.csv
+*.csv
+*.pt
+*.png
+hybrid_checkpoints/
