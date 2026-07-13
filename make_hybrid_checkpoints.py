@@ -6,9 +6,7 @@
 
 import torch
 from pathlib import Path
-from lightly_train._models.dinov3.dinov3_package import (
-    DINOv3Package, MODEL_NAME_TO_INFO, _maybe_download_weights,
-)
+from lightly_train._models.dinov3.dinov3_package import DINOv3Package
 from lightly_train._task_models.task_model_helpers import download_checkpoint
 
 OUT = Path(__file__).parent / "hybrid_checkpoints"
@@ -22,8 +20,7 @@ coco     = torch.load(download_checkpoint("dinov3/convnext-small-ltdetr-coco"),
                       weights_only=False, map_location="cpu")
 # download and read the train_model state dict from the COCO checkpoint (backbone + head weights), where the state dict for the backbone is nested under the key prefix "ema_model.model.backbone.model."
 # coco["train_model"] is a dict containing all the actual layer names (keys) and their correspondiong weight tensors (values).
-dinov3_sd = torch.load(_maybe_download_weights(MODEL_NAME_TO_INFO["convnext-small"]),
-                       weights_only=True, map_location="cpu")
+dinov3_sd = DINOv3Package.get_model("convnext-small").state_dict()
 random_sd = DINOv3Package.get_model("convnext-small", load_weights=False).state_dict()
 # these are dicts with the same backbone layer names but without the "BB" prefix
 # ── Build and save each hybrid checkpoint ────────────────────────────────────
