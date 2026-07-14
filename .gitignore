@@ -16,5 +16,3 @@ results.csv
 *.pt
 *.png
 hybrid_checkpoints/
-verify.py
-check.py
