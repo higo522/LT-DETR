@@ -14,7 +14,7 @@ TEST_FOLDS = [
 ]
 CV_ROOT = Path(os.environ["SCRATCH"]) / "moose_deer" / "5_Fold_CV"
 
-steps = 12000
+steps = 60000
 
 
 def slugify(s: str) -> str:
@@ -63,7 +63,7 @@ def main():
                 "name": run_name,
                 "log_model": False,
             },
-            "val_every_num_steps": 500,
+            "val_every_num_steps": 1000,
         },
         save_checkpoint_args={
             "save_every_num_steps": 10000,
