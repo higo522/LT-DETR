@@ -16,3 +16,4 @@ results.csv
 *.pt
 *.png
 hybrid_checkpoints/
+cosine lr/

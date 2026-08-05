@@ -7,7 +7,7 @@ import torch
 import lightly_train
 from tqdm import tqdm
 from supervision.metrics import MeanAveragePrecision
-CHECKPOINT_DIR = "experiments/Heldout_CV (level 2)"
+CHECKPOINT_DIR = "experiments/LTDETR_level_1 (2234i)"
 data_yaml_path = "/home/higo522/moose_deer/5_Fold_CV/test_data.yaml"
 
 TEST_FOLDS = [
@@ -77,6 +77,7 @@ for test_fold in TEST_FOLDS:
         F1_d        = 2 * precision_d * recall_d / (precision_d + recall_d + 1e-9)
 
         map_result = MeanAveragePrecision().update(predictions, targets).compute()
+        print(map_result.ap_per_class)
 
         print(f"MOOSE: Precision = {precision_m:.4f}, Recall = {recall_m:.4f}, F1 = {F1_m:.4f}, mAP50 = {map_result.ap_per_class[0,0]:.3f}, mAP50-95 = {map_result.ap_per_class[0].mean():.3f}")
         print(f"DEER:  Precision = {precision_d:.4f}, Recall = {recall_d:.4f}, F1 = {F1_d:.4f}, mAP50 = {map_result.ap_per_class[1,0]:.3f}, mAP50-95 = {map_result.ap_per_class[1].mean():.3f}")
@@ -86,7 +87,7 @@ for test_fold in TEST_FOLDS:
         csv_rows.append([test_fold["name"], model_name, "D", f"{precision_d:.4f}", f"{recall_d:.4f}", f"{F1_d:.4f}", f"{map_result.ap_per_class[1,0]:.3f}", f"{map_result.ap_per_class[1].mean():.3f}"])
         csv_rows.append([test_fold["name"], model_name, "A", f"{(precision_m + precision_d) / 2:.4f}", f"{(recall_m + recall_d) / 2:.4f}", f"{(F1_m + F1_d) / 2:.4f}", f"{map_result.ap_per_class[:,0].mean():.3f}", f"{map_result.ap_per_class.mean():.3f}"])
 
-csv_path = "results.csv"
+csv_path = "results_level_1 (2234i).csv"
 with open(csv_path, "w", newline="") as f:
     writer = csv.writer(f)
     writer.writerow(["Test Fold", "Val Model", "Class", "Precision", "Recall", "F1", "mAP50", "mAP50:95"])

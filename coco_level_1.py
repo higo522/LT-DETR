@@ -6,8 +6,8 @@ import torch
 from pathlib import Path
 
 TEST_FOLDS = [
-    #"Fold_1_Feb29_Mar11",
-    #"Fold_2_Mar01",
+    "Fold_1_Feb29_Mar11",
+    "Fold_2_Mar01",
     "Fold_3_Mar05",
     "Fold_4_Mar09",
     "Fold_5_Mar10",
@@ -83,7 +83,7 @@ if __name__ == "__main__":
     main()
 
 '''
-provides different number of classes for enc_score_head. Reinitializing score head.
+Checkpoint provides different number of classes for enc_score_head. Reinitializing score head.
 Checkpoint provides different number of classes for dec_score_head. Reinitializing score head.
 Checkpoint provides 80 classes but module expects 2. Reinitializing denoising class embed.
 Checkpoint provides different number of classes for enc_score_head. Reinitializing score head.

@@ -81,3 +81,12 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+'''
+Checkpoint provides different number of classes for enc_score_head. Reinitializing score head.
+Checkpoint provides different number of classes for dec_score_head. Reinitializing score head.
+Checkpoint provides 80 classes but module expects 2. Reinitializing denoising class embed.
+Checkpoint provides different number of classes for enc_score_head. Reinitializing score head.
+Checkpoint provides different number of classes for dec_score_head. Reinitializing score head.
+Checkpoint provides 80 classes but module expects 2. Reinitializing denoising class embed.
+'''
