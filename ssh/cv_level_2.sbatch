@@ -10,7 +10,7 @@
 #SBATCH --time=12:00:00                # adjust after timing one fold
 #SBATCH --output=/home/higo522/scratch/LT-DETR/logs/%x_%A_%a.out
 
-module load StdEnv/2023 python/3.12 opencv
+module load StdEnv/2023 python/3.11 opencv
 
 source ~/scratch/LT-DETR/venv/bin/activate
 
