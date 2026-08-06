@@ -13,6 +13,7 @@ TEST_FOLDS = [
     "Fold_5_Mar10",
 ]
 CV_ROOT = Path("/home/higo522/moose_deer/5_Fold_CV")
+BACKBONE_WEIGHTS = Path.home() / ".cache" / "lightly-train" / "models" / "dinov3_convnext_small_lvd1689m.pth"
 
 steps = 12000
 
@@ -72,6 +73,9 @@ def main():
                     },
                 },
                 model_args={
+                    # backbone_weights must be set explicitly: without it lightly_train forces
+                    # backbone_args.pretrained=False and randomly inits the backbone
+                    "backbone_weights": str(BACKBONE_WEIGHTS),
                     "optimizer_lr": 5e-5, 
                     "scheduler_warmup_steps": steps // 10,
                     "ema_warmup_steps": steps // 10,

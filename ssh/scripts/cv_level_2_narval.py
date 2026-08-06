@@ -13,6 +13,7 @@ TEST_FOLDS = [
     "Fold_5_Mar10",
 ]
 CV_ROOT = Path(os.environ["SCRATCH"]) / "moose_deer" / "5_Fold_CV"
+BACKBONE_WEIGHTS = Path(os.environ["SCRATCH"]) / "LT-DETR" / "model_cache" / "dinov3_convnext_small_lvd1689m.pth"
 
 steps = 72000
 
@@ -82,8 +83,9 @@ def main():
             },
         },
         model_args={
-            # uses pretrained dinov3 backbone weights (default) -- looked up via
-            # LIGHTLY_TRAIN_MODEL_CACHE_DIR (set in cv_level_2.sbatch), since compute nodes are offline
+            # backbone_weights must be set explicitly: without it lightly_train forces
+            # backbone_args.pretrained=False and randomly inits the backbone
+            "backbone_weights": str(BACKBONE_WEIGHTS),
             "optimizer_lr": 1e-4,
             "scheduler_warmup_steps": steps // 10,
             "ema_warmup_steps": steps // 10,
