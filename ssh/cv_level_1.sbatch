@@ -19,6 +19,8 @@ source ~/scratch/LT-DETR/venv/bin/activate
 export WANDB_MODE=offline
 export WANDB_DIR=$SCRATCH/wandb
 
+export LIGHTLY_TRAIN_DATALOADER_TIMEOUT_SEC=600
+
 mkdir -p "$WANDB_DIR" "$SCRATCH/LT-DETR/logs"
 
 cd ~/scratch/LT-DETR

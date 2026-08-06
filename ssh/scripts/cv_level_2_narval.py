@@ -14,7 +14,7 @@ TEST_FOLDS = [
 ]
 CV_ROOT = Path(os.environ["SCRATCH"]) / "moose_deer" / "5_Fold_CV"
 
-steps = 60000
+steps = 72000
 
 
 def slugify(s: str) -> str:
@@ -41,7 +41,7 @@ def main():
 
     # e.g. Fold_3_Mar05/CV/heldout_val/Fold1_val
     run_name = f"{test_fold}/CV/heldout_val/{split_path.name}"
-    out_dir = f"experiments/LTDETR_level_2/{slugify(run_name)}"
+    out_dir = f"experiments/LTDETR_level_2_72k/{slugify(run_name)}"
 
     lightly_train.train_object_detection(
         out=out_dir,
@@ -59,7 +59,7 @@ def main():
         },
         logger_args={
             "wandb": {
-                "project": "LTDETR_level_2",
+                "project": "LTDETR_level_2_72k",
                 "name": run_name,
                 "log_model": False,
             },
@@ -84,7 +84,7 @@ def main():
         model_args={
             # uses pretrained dinov3 backbone weights (default) -- looked up via
             # LIGHTLY_TRAIN_MODEL_CACHE_DIR (set in cv_level_2.sbatch), since compute nodes are offline
-            "optimizer_lr": 5e-5,
+            "optimizer_lr": 1e-4,
             "scheduler_warmup_steps": steps // 10,
             "ema_warmup_steps": steps // 10,
         },

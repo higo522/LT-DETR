@@ -7,7 +7,7 @@ import torch
 import lightly_train
 from tqdm import tqdm
 from supervision.metrics import MeanAveragePrecision
-CHECKPOINT_DIR = "experiments/LTDETR_level_1 (2234i)"
+CHECKPOINT_DIR = "experiments/LTDETR_level_2"
 data_yaml_path = "/home/higo522/moose_deer/5_Fold_CV/test_data.yaml"
 
 TEST_FOLDS = [
@@ -25,9 +25,9 @@ for test_fold in TEST_FOLDS:
     annotations_directory_path = f"/home/higo522/moose_deer/5_Fold_CV/{test_fold['data_dir']}/labels/val"
     checkpoints = sorted([d for d in os.listdir(CHECKPOINT_DIR) if d.startswith(test_fold["prefix"])])
 
-    for ckpt in checkpoints:
+    for model_idx, ckpt in enumerate(checkpoints, start=1):
         checkpoint = f"{CHECKPOINT_DIR}/{ckpt}/exported_models/exported_best.pt"
-        model_name = ckpt[-9:]
+        model_name = f"Val {model_idx}"
 
         print("\n" + "=" * 80)
         print(f"{test_fold['name']} — {model_name}")
@@ -76,18 +76,19 @@ for test_fold in TEST_FOLDS:
         recall_d    = TP_D / (TP_D + FN_D + 1e-9)
         F1_d        = 2 * precision_d * recall_d / (precision_d + recall_d + 1e-9)
 
+        macro_f1 = (F1_m + F1_d) / 2
+
         map_result = MeanAveragePrecision().update(predictions, targets).compute()
-        print(map_result.ap_per_class)
 
         print(f"MOOSE: Precision = {precision_m:.4f}, Recall = {recall_m:.4f}, F1 = {F1_m:.4f}, mAP50 = {map_result.ap_per_class[0,0]:.3f}, mAP50-95 = {map_result.ap_per_class[0].mean():.3f}")
         print(f"DEER:  Precision = {precision_d:.4f}, Recall = {recall_d:.4f}, F1 = {F1_d:.4f}, mAP50 = {map_result.ap_per_class[1,0]:.3f}, mAP50-95 = {map_result.ap_per_class[1].mean():.3f}")
-        print(f"Avg:   Precision = {(precision_m + precision_d) / 2:.4f}, Recall = {(recall_m + recall_d) / 2:.4f}, F1 = {(F1_m + F1_d) / 2:.4f}, mAP50 = {map_result.ap_per_class[:,0].mean():.3f}, mAP50-95 = {map_result.ap_per_class.mean():.3f}")
+        print(f"Avg:   Precision = {(precision_m + precision_d) / 2:.4f}, Recall = {(recall_m + recall_d) / 2:.4f}, F1 = {macro_f1:.4f}, mAP50 = {map_result.ap_per_class[:,0].mean():.3f}, mAP50-95 = {map_result.ap_per_class.mean():.3f}")
 
         csv_rows.append([test_fold["name"], model_name, "M", f"{precision_m:.4f}", f"{recall_m:.4f}", f"{F1_m:.4f}", f"{map_result.ap_per_class[0,0]:.3f}", f"{map_result.ap_per_class[0].mean():.3f}"])
         csv_rows.append([test_fold["name"], model_name, "D", f"{precision_d:.4f}", f"{recall_d:.4f}", f"{F1_d:.4f}", f"{map_result.ap_per_class[1,0]:.3f}", f"{map_result.ap_per_class[1].mean():.3f}"])
-        csv_rows.append([test_fold["name"], model_name, "A", f"{(precision_m + precision_d) / 2:.4f}", f"{(recall_m + recall_d) / 2:.4f}", f"{(F1_m + F1_d) / 2:.4f}", f"{map_result.ap_per_class[:,0].mean():.3f}", f"{map_result.ap_per_class.mean():.3f}"])
+        csv_rows.append([test_fold["name"], model_name, "A", f"{(precision_m + precision_d) / 2:.4f}", f"{(recall_m + recall_d) / 2:.4f}", f"{macro_f1:.4f}", f"{map_result.ap_per_class[:,0].mean():.3f}", f"{map_result.ap_per_class.mean():.3f}"])
 
-csv_path = "results_level_1 (2234i).csv"
+csv_path = "results.csv"
 with open(csv_path, "w", newline="") as f:
     writer = csv.writer(f)
     writer.writerow(["Test Fold", "Val Model", "Class", "Precision", "Recall", "F1", "mAP50", "mAP50:95"])

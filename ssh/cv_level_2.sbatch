@@ -19,6 +19,8 @@ source ~/scratch/LT-DETR/venv/bin/activate
 export WANDB_MODE=offline
 export WANDB_DIR=$SCRATCH/wandb
 
+export LIGHTLY_TRAIN_DATALOADER_TIMEOUT_SEC=600
+
 # pretrained DINOv3 backbone must already sit here as dinov3_convnext_small_lvd1689m.pth (transferred via Globus)
 export LIGHTLY_TRAIN_MODEL_CACHE_DIR=$SCRATCH/LT-DETR/model_cache
 
