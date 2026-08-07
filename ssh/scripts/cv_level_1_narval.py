@@ -14,7 +14,7 @@ TEST_FOLDS = [
 ]
 CV_ROOT = Path(os.environ["SCRATCH"]) / "moose_deer" / "5_Fold_CV"
 
-steps = 72000
+steps = 120000
 
 
 def slugify(s: str) -> str:
@@ -41,7 +41,7 @@ def main():
 
     # e.g. Fold_3_Mar05/CV/heldout_val/Fold1_val
     run_name = f"{test_fold}/CV/heldout_val/{split_path.name}"
-    out_dir = f"experiments/LTDETR_level_1_72k/{slugify(run_name)}"
+    out_dir = f"experiments/LTDETR_level_1_120k/{slugify(run_name)}"
 
     lightly_train.train_object_detection(
         out=out_dir,
@@ -59,7 +59,7 @@ def main():
         },
         logger_args={
             "wandb": {
-                "project": "LTDETR_level_1_72k",
+                "project": "LTDETR_level_1_120k",
                 "name": run_name,
                 "log_model": False,
             },
