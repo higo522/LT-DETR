@@ -7,7 +7,7 @@
 #SBATCH --gpus-per-node=a100:1
 #SBATCH --cpus-per-task=6            # Narval A100 nodes: 12 cores per GPU
 #SBATCH --mem=64G
-#SBATCH --time=15:00:00                # adjust after timing one fold
+#SBATCH --time=24:00:00                # adjust after timing one fold
 #SBATCH --output=/home/higo522/scratch/LT-DETR/logs/%x_%A_%a.out
 
 module load StdEnv/2023 python/3.11 opencv gcc arrow/25.0.0
