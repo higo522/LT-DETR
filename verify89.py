@@ -3,7 +3,7 @@ from lightly_train._models.dinov3.dinov3_package import DINOV3_PACKAGE
 from pathlib import Path
 import os
 
-BACKBONE_WEIGHTS = Path(os.environ["SCRATCH"]) / "LT-DETR" / "model_cache" / "dinov3_convnext_small_lvd1689m.pth"
+BACKBONE_WEIGHTS = Path(os.environ["SCRATCH"]) / "LT-DETR" / "model_cache" / "dinov3_convnext_small_lvd1000m.pth"
 
 model = DINOV3_PACKAGE.get_model(
     "convnext-small",

@@ -21,7 +21,7 @@ TEST_FOLDS = [
 
 
 def main():
-    exp_name = "LTDETR_level_1_108k"
+    exp_name = "LTDETR_level_1_120k"
     checkpoint_dir = Path("experiments") / exp_name
     csv_rows = []
 

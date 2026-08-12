@@ -5,16 +5,15 @@ from pathlib import Path
 
 import lightly_train
 
-TEST_FOLDS = [
-    "Fold_1_Feb29_Mar11",
-    "Fold_2_Mar01",
-    "Fold_3_Mar05",
-    "Fold_4_Mar09",
-    "Fold_5_Mar10",
-]
 CV_ROOT = Path(os.environ["SCRATCH"]) / "moose_deer" / "5_Fold_CV"
 
-steps = 72000
+# the two runs that failed in the full cv_level_1 sweep
+RERUN_SPLITS = [
+    ("Fold_1_Feb29_Mar11", "Fold2_val"),
+    ("Fold_1_Feb29_Mar11", "Fold3_val"),
+]
+
+steps = 120000
 
 
 def slugify(s: str) -> str:
@@ -23,25 +22,16 @@ def slugify(s: str) -> str:
     return s.strip("_")
 
 
-def get_all_splits():
-    # flatten (test_fold, split_path) into one list so SLURM_ARRAY_TASK_ID can index a single fold combo
-    splits = []
-    for test_fold in TEST_FOLDS:
-        heldout_root = CV_ROOT / test_fold / "CV" / "heldout_val"
-        for split_path in sorted(p for p in heldout_root.iterdir() if p.is_dir()):
-            splits.append((test_fold, split_path))
-    return splits
-
-
 def main():
     import wandb
 
     task_id = int(sys.argv[1])
-    test_fold, split_path = get_all_splits()[task_id]
+    test_fold, split_name = RERUN_SPLITS[task_id]
+    split_path = CV_ROOT / test_fold / "CV" / "heldout_val" / split_name
 
-    # e.g. Fold_3_Mar05/CV/heldout_val/Fold1_val
+    # e.g. Fold_1_Feb29_Mar11/CV/heldout_val/Fold2_val
     run_name = f"{test_fold}/CV/heldout_val/{split_path.name}"
-    out_dir = f"experiments/LTDETR_level_1_72k_1e-6_backbone/{slugify(run_name)}"
+    out_dir = f"experiments/LTDETR_level_1_120k/{slugify(run_name)}"
 
     lightly_train.train_object_detection(
         out=out_dir,
@@ -59,7 +49,7 @@ def main():
         },
         logger_args={
             "wandb": {
-                "project": "LTDETR_level_1_72k_1e-6_backbone",
+                "project": "LTDETR_level_1_120k",
                 "name": run_name,
                 "log_model": False,
             },
@@ -84,6 +74,7 @@ def main():
         model_args={
             "backbone_args": {"pretrained": False, "weights": None},
             "optimizer_lr": 1e-4,
+            "backbone_lr": 1e-4,
             "scheduler_warmup_steps": steps // 10,
             "ema_warmup_steps": steps // 10,
         },
